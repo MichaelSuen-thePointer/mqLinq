@@ -3,8 +3,18 @@
 #include <iostream>
 using namespace std;
 using namespace pl::linq;
+
+int test(int x)
+{
+    return x;
+}
+
 int main()
 {
+    auto lamb = [](int x) {return x; };
+
+    callable_traits<decltype(lamb)>::param_type x;
+
     //////////////////////////////////////////////////////////////////
     // from
     //////////////////////////////////////////////////////////////////

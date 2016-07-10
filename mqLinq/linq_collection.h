@@ -10,11 +10,14 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <map>
 
 namespace pl
 {
 namespace linq
 {
+using std::size_t;
+
 class collection_empty : public std::runtime_error
 {
 public:
@@ -44,26 +47,58 @@ public:
 };
 
 template<class T>
-struct lambda_tratis_impl;
+struct memfunc_traits;
 
 template<class TRet, class TClass, class... TArgs>
-struct lambda_tratis_impl<TRet(TClass::*)(TArgs...)>
+struct memfunc_traits<TRet(TClass::*)(TArgs...)>
+{
+    using return_type = TRet;
+    using param_type = std::tuple<TArgs...>;
+    using is_const_this = std::false_type;
+};
+
+template<class TRet, class TClass, class... TArgs>
+struct memfunc_traits<TRet(TClass::*)(TArgs...)const>
+{
+    using return_type = TRet;
+    using param_type = std::tuple<TArgs...>;
+    using is_const_this = std::false_type;
+};
+
+template<class TFunction>
+struct callable_traits;
+
+template<class TFunction>
+struct callable_traits : memfunc_traits<decltype(&TFunction::operator())>
+{
+};
+
+template<class TRet, class... TArgs>
+struct callable_traits<TRet(*)(TArgs...)>
 {
     using return_type = TRet;
     using function_type = TRet(TArgs...);
+    using param_type = std::tuple<TArgs...>;
 };
 
-template<class TRet, class TClass, class... TArgs>
-struct lambda_tratis_impl<TRet(TClass::*)(TArgs...)const>
+template<class TRet, class... TArgs>
+struct callable_traits<TRet(TArgs...)>
 {
     using return_type = TRet;
     using function_type = TRet(TArgs...);
+    using param_type = std::tuple<TArgs...>;
 };
 
-template<class TLambda>
-struct function_traits : lambda_tratis_impl<decltype(&TLambda::operator())>
+template<class TRet, class TClass, class... TArgs>
+struct callable_traits<TRet(TClass::*)(TArgs...)> : memfunc_traits<TRet(TClass::*)(TArgs...)>
 {
 };
+
+template<class TRet, class TClass, class... TArgs>
+struct callable_traits<TRet(TClass::*)(TArgs...)const> : memfunc_traits<TRet(TClass::*)(TArgs...)const>
+{
+};
+
 
 template <class TIter>
 using deref_iter_t = std::decay_t<decltype(*std::declval<TIter>())>;
@@ -85,25 +120,23 @@ public:
     {
     }
 
-    virtual ~iterator_common_impl() = default;
-
-    virtual self& operator++()
+    self& operator++()
     {
         ++_iter;
         return *this;
     }
 
-    virtual value_type operator*() const
+    value_type operator*() const
     {
         return *_iter;
     }
 
-    virtual bool operator==(const self& other) const
+    bool operator==(const self& other) const
     {
         return _iter == other._iter;
     }
 
-    virtual bool operator!=(const self& other) const
+    bool operator!=(const self& other) const
     {
         return _iter != other._iter;
     }
@@ -120,10 +153,10 @@ public:
 };
 
 template <class TIterator, class TFunction>
-class select_iterator : public iterator_common_impl<TIterator, typename function_traits<TFunction>::return_type>
+class select_iterator : public iterator_common_impl<TIterator, typename callable_traits<TFunction>::return_type>
 {
 private:
-    using base = iterator_common_impl<TIterator, typename function_traits<TFunction>::return_type>;
+    using base = iterator_common_impl<TIterator, typename callable_traits<TFunction>::return_type>;
     using self = select_iterator<TIterator, TFunction>;
 public:
     using value_type = typename base::value_type;
@@ -135,7 +168,7 @@ public:
     {
     }
 
-    auto operator*() const -> typename function_traits<TFunction>::return_type override
+    auto operator*() const -> typename callable_traits<TFunction>::return_type
     {
         return _func(*base::_iter);
     }
@@ -171,7 +204,7 @@ public:
     }
 
 
-    self& operator++() override
+    self& operator++()
     {
         ++base::_iter;
         check_move_iterator();
@@ -251,7 +284,7 @@ public:
         }
     }
 
-    self& operator++() override
+    self& operator++()
     {
         if (++_current == _count)
         {
@@ -287,7 +320,7 @@ public:
         }
     }
 
-    self& operator++() override
+    self& operator++()
     {
         if (!_func(*++base::_iter))
         {
@@ -313,18 +346,22 @@ public:
     {
     }
 
-    virtual ~iterator_common_impl() = default;
+    self& operator++()
+    {
+        return *this;
+    }
 
-    virtual self& operator++() = 0;
+    value_type operator*()
+    {
+        return value_type{};
+    }
 
-    virtual value_type operator*() const = 0;
-
-    virtual bool operator==(const self& other) const
+    bool operator==(const self& other) const
     {
         return _iter1 == other._iter1 && _iter2 == other._iter2;
     }
 
-    virtual bool operator!=(const self& other) const
+    bool operator!=(const self& other) const
     {
         return !((*this) == other);
     }
@@ -352,7 +389,7 @@ public:
     {
     }
 
-    self& operator++() override
+    self& operator++()
     {
         if (base::_iter1 != _end1)
         {
@@ -365,7 +402,7 @@ public:
         return *this;
     }
 
-    value_type operator*() const override
+    value_type operator*() const
     {
         if (base::_iter1 != _end1)
         {
@@ -399,7 +436,7 @@ public:
     {
     }
 
-    self& operator++() override
+    self& operator++()
     {
         if (base::_iter1 != _end1 && base::_iter2 != _end2)
         {
@@ -409,7 +446,7 @@ public:
         return *this;
     }
 
-    value_type operator*() const override
+    value_type operator*() const
     {
         return value_type{*base::_iter, *base::_iter2};
     }
@@ -456,7 +493,6 @@ public:
     }
 
     [[noreturn]]
-
     value_type operator*() const
     {
         throw collection_empty("collection is empty");
@@ -1021,6 +1057,49 @@ public:
         });
     }
 
+
+    template<typename TFunction>
+    auto select_many(const TFunction& f) const
+        ->linq<decltype(*f(std::declval<value_type>()).begin())>
+    {
+        using collection_type = typename callable_traits<TFunction>::return_type;
+        using collection_value_type = decltype(*f(std::declval<value_type>()).begin());
+        
+        return select(f).aggregate(from_empty<collection_value_type>(), [](const auto& a, const collection_type& b)
+        {
+            return a.concat(b);
+        });
+    }
+
+    template<class TFunction>
+    auto group_by(const TFunction& keySelector) const
+        -> linq<std::pair<typename callable_traits<TFunction>::return_type, linq<value_type>>>
+    {
+        using key_type = typename callable_traits<TFunction>::return_type;
+        using value_vector = std::vector<value_type>;
+        
+        std::map<key_type, value_vector> m;
+        for(const auto& elm : *this)
+        {
+            auto key = keySelector(elm);
+            auto iter = m.find(key);
+            if(iter == m.end())
+            {
+                m[key].push_back(elm);
+            }
+            else
+            {
+                iter->second->push_back(elm);
+            }
+        }
+
+        std::vector<std::pair<key_type, linq<value_type>>> res;
+        for(const auto& p : m)
+        {
+            res.push_back({p.first, from_values(std::move(p.second))});
+        }
+        return from_values(std::move(res));
+    }
 private:
     [[noreturn]]
 
