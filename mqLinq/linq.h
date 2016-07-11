@@ -15,14 +15,11 @@
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
-/*
+
 namespace pl
 {
 namespace linq
 {
-*/
-using std::size_t;
-
 class linq_exception : public std::logic_error
 {
 public:
@@ -117,7 +114,6 @@ template <class TRet, class TClass, class... TArgs>
 struct callable_traits<TRet(TClass::*)(TArgs ...) const> : memfunc_traits<TRet(TClass::*)(TArgs ...) const>
 {
 };
-
 
 template <typename TIterator>
 using deref_iter_t = std::decay_t<decltype(*(std::declval<TIterator>()))>;
@@ -249,12 +245,12 @@ public:
 private:
     TIterator _end;
 public:
-    skip_iterator(const TIterator& iter, const TIterator& end, size_t count)
+    skip_iterator(const TIterator& iter, const TIterator& end, std::size_t count)
         : base(iter)
         , _end(end)
     {
         assert(count >= 0);
-        for (size_t i = 0; i != count && base::_iter != _end; i++ , ++base::_iter)
+        for (std::size_t i = 0; i != count && base::_iter != _end; i++ , ++base::_iter)
         {
             //nothing
         }
@@ -293,10 +289,10 @@ public:
     using value_type = typename base::value_type;
 private:
     TIterator _end;
-    size_t _current;
-    size_t _count;
+    std::size_t _current;
+    std::size_t _count;
 public:
-    take_iterator(const TIterator& iter, const TIterator& end, size_t count)
+    take_iterator(const TIterator& iter, const TIterator& end, std::size_t count)
         : iterator_common_impl<TIterator>(iter)
         , _end(end)
         , _current(0)
@@ -451,11 +447,12 @@ private:
                                       TIterator2,
                                       std::pair<deref_iter_t<TIterator1>,
                                                 deref_iter_t<TIterator2>>>;
-    using value_type = typename base::value_type;
 
     TIterator1 _end1;
     TIterator2 _end2;
 public:
+    using value_type = typename base::value_type;
+
     zip_iterator(const TIterator1& begin1, const TIterator1& end1, const TIterator2& begin2, const TIterator2& end2)
         : base(begin1, begin2)
         , _end1(end1)
@@ -477,7 +474,6 @@ public:
     {
         return value_type{*base::_iter1, *base::_iter2};
     }
-
 };
 
 template <class TContainer>
@@ -503,8 +499,13 @@ class empty_iterator
 {
 private:
     using self = empty_iterator<T>;
-    using value_type = T;
 public:
+    using value_type = T;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag;
+
     self& operator++()
     {
         return *this;
@@ -643,9 +644,9 @@ linq<T> from_values(const std::initializer_list<T>& cont)
     );
 }
 
-template <class TContainer, std::enable_if_t<!std::is_same<
+template <class TContainer/*, std::enable_if_t<!std::is_same<
               std::decay_t<TContainer>,
-              std::initializer_list<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>>::value>* = nullptr>
+              std::initializer_list<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>>::value>* = nullptr*/>
 auto from_values(const TContainer& cont) -> linq<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>
 {
     auto xs = std::make_shared<TContainer>(cont);
@@ -656,9 +657,9 @@ auto from_values(const TContainer& cont) -> linq<deref_iter_t<decltype(std::begi
     );
 }
 
-template <class TContainer, std::enable_if_t<!std::is_same<
+template <class TContainer/*, std::enable_if_t<!std::is_same<
               std::decay_t<TContainer>,
-              std::initializer_list<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>>::value>* = nullptr>
+              std::initializer_list<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>>::value>* = nullptr*/>
 auto from_values(TContainer&& cont)
 -> linq<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>
 {
@@ -732,7 +733,7 @@ public:
         };
     }
 
-    linq_collection<skip_iterator<TIterator>> skip(int count) const
+    linq_collection<skip_iterator<TIterator>> skip(std::size_t count) const
     {
         return {
             skip_iterator<TIterator>{_begin, _end, count},
@@ -749,7 +750,7 @@ public:
         };
     }
 
-    linq_collection<take_iterator<TIterator>> take(size_t count) const
+    linq_collection<take_iterator<TIterator>> take(std::size_t count) const
     {
         return {
             take_iterator<TIterator>{_begin, _end, count},
@@ -800,9 +801,9 @@ public:
         return false;
     }
 
-    size_t count() const
+    std::size_t count() const
     {
-        size_t c = 0;
+        std::size_t c = 0;
         for (auto i = _begin; i != _end; ++i)
         {
             c++;
@@ -819,7 +820,7 @@ public:
         return *this;
     }
 
-    value_type element_at(size_t i) const
+    value_type element_at(std::size_t i) const
     {
         auto iter = _begin;
         for (; iter != _end && i != 0; ++iter , i--)
@@ -985,7 +986,7 @@ public:
                               xs.push_back(value);
                           }
                       });
-        return from_values(xs);
+        return from_values(std::move(xs));
     }
 
     template <class TIterator2/*,
@@ -1056,7 +1057,7 @@ public:
     TResult aggregate(const TResult& init, const TFunction& f) const
     {
         TResult res = init;
-        for(auto it = _begin; it != _end; ++it)
+        for (auto it = _begin; it != _end; ++it)
         {
             res = f(res, *it);
         }
@@ -1207,26 +1208,42 @@ public:
             auto upper1 = map1.upper_bound(key1);
             auto upper2 = map2.upper_bound(key2);
 
-            std::vector<value_type1> outers;
-            std::vector<value_type2> inners;
-
-            if (key1 <= key2)
+            if (key1 < key2)
             {
+                std::vector<value_type1> outers;
                 std::for_each(lower1, upper1, [&outers](const std::pair<key_type, value_type1>& it)
-                              {
-                                  outers.push_back(it.second);
-                              });
+                {
+                    outers.push_back(it.second);
+                });
                 lower1 = upper1;
+                result.emplace_back(key1, from_values(std::move(outers)), from_empty<value_type2>());
             }
-            if (key1 >= key2)
+            else if (key1 > key2)
             {
+                std::vector<value_type2> inners;
                 std::for_each(lower2, upper2, [&inners](const std::pair<key_type, value_type2>& it)
-                              {
-                                  inners.push_back(it.second);
-                              });
+                {
+                    inners.push_back(it.second);
+                });
                 lower2 = upper2;
+                result.emplace_back(key2, from_empty<value_type1>(), from_values(std::move(inners)));
             }
-            result.emplace_back(key2, from_values(std::move(outers)), from_values(std::move(inners)));
+            else
+            {
+                std::vector<value_type1> outers;
+                std::for_each(lower1, upper1, [&outers](const std::pair<key_type, value_type1>& it)
+                {
+                    outers.push_back(it.second);
+                });
+                std::vector<value_type2> inners;
+                std::for_each(lower2, upper2, [&inners](const std::pair<key_type, value_type2>& it)
+                {
+                    inners.push_back(it.second);
+                });
+                lower1 = upper1;
+                lower2 = upper2;
+                result.emplace_back(key1, from_values(std::move(outers)), from_values(std::move(inners)));
+            }
         }
         return from_values(std::move(result));
     }
@@ -1248,8 +1265,8 @@ public:
     template <class TIterator2, class TFunction1, class TFunction2>
     auto group_join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
     -> linq<std::tuple<std::remove_reference_t<decltype(keySelector1(std::declval<value_type>()))>,
-        std::decay_t<deref_iter_t<TIterator>>,
-        linq<std::decay_t<deref_iter_t<TIterator2>>>>>
+                       std::decay_t<deref_iter_t<TIterator>>,
+                       linq<std::decay_t<deref_iter_t<TIterator2>>>>>
     {
         using key_type = std::remove_reference_t<decltype(keySelector1(std::declval<value_type>()))>;
         using value_type1 = std::decay_t<deref_iter_t<TIterator>>;
@@ -1260,8 +1277,9 @@ public:
         auto f = full_join(e, keySelector1, keySelector2);
         auto g = f.select_many([](const full_join_pair_t& item) -> linq<group_join_pair_t>
             {
-                auto& outers = std::get<1>(item);
-                return outers.select([&item](const value_type1& outer) -> group_join_pair_t
+                const auto& outers = std::get<1>(item);
+                //MUST CAPTURE item BY VALUE
+                return outers.select([item](const value_type1& outer) -> group_join_pair_t
                     {
                         return {std::get<0>(item), outer, std::get<2>(item)};
                     });
@@ -1299,7 +1317,7 @@ public:
         auto j = g.select_many([](const group_join_pair_t& item)-> linq<join_pair_t>
             {
                 const linq<value_type2>& inners = std::get<2>(item);
-                return inners.select([&item](const value_type2& inner)-> join_pair_t
+                return inners.select([item](const value_type2& inner)-> join_pair_t
                     {
                         return {std::get<0>(item), std::get<1>(item), inner};
                     });
@@ -1496,7 +1514,5 @@ auto from(const TIterator& a, const TIterator& b) -> linq_collection<TIterator>
 {
     return {a, b};
 }
-/*
 }
 }
-*/

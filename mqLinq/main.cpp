@@ -8,29 +8,39 @@
 #include <iostream>
 
 using namespace std;
-//using namespace pl::linq;
+using namespace pl::linq;
+
+/*
+ *THESE TEST CASE IS ORIGINALLY FROM VCZH
+ *https://github.com/vczh/vczh_toys/blob/master/CppLinq/CppLinq/Main.cpp
+ */
 
 struct person
 {
-    string		name;
+    string name;
 };
 
 struct pet
 {
-    string		name;
-    person		owner;
+    string name;
+    person owner;
 };
 
 
 int main()
 {
-    deref_iter_t<const int*> x = 10;
     {
         // calculate sum of squares of odd numbers
         int xs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         int sum = from(xs)
-            .where([](int x) { return x % 2 == 1; })
-            .select([](int x) { return x * x; })
+            .where([](int x)
+                {
+                    return x % 2 == 1;
+                })
+            .select([](int x)
+                {
+                    return x * x;
+                })
             .sum();
         // prints 165
         cout << sum << endl;
@@ -39,10 +49,19 @@ int main()
         // iterate of squares of odd numbers ordered by the last digit
         vector<int> xs = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         for (auto x : from(xs)
-             .where([](int x) { return x % 2 == 1; })
-             .select([](int x) { return x * x; })
-             .order_by([](int x) { return x % 10; })
-             )
+             .where([](int x)
+                 {
+                     return x % 2 == 1;
+                 })
+             .select([](int x)
+                 {
+                     return x * x;
+                 })
+             .order_by([](int x)
+                 {
+                     return x % 10;
+                 })
+        )
         {
             cout << x << " ";
         }
@@ -61,9 +80,18 @@ int main()
         pet daisy = {"Daisy", magnus};
         pet pets[] = {barley, boots, whiskers, daisy};
 
-        auto person_name = [](const person& p) { return p.name; };
-        auto pet_name = [](const pet& p) { return p.name; };
-        auto pet_owner_name = [](const pet& p) { return p.owner.name; };
+        auto person_name = [](const person& p)
+            {
+                return p.name;
+            };
+        auto pet_name = [](const pet& p)
+            {
+                return p.name;
+            };
+        auto pet_owner_name = [](const pet& p)
+            {
+                return p.owner.name;
+            };
 
         // print people and their animals in to levels
         /* prints
@@ -151,7 +179,10 @@ int test()
     //////////////////////////////////////////////////////////////////
     {
         int xs[] = {1, 2, 3, 4, 5};
-        linq<int> hidden = from(xs).select([](int x) { return x * 2; });
+        linq<int> hidden = from(xs).select([](int x)
+            {
+                return x * 2;
+            });
         assert(hidden.sequence_equal({2, 4, 6, 8, 10}));
     }
     //////////////////////////////////////////////////////////////////
@@ -219,12 +250,30 @@ int test()
 
         assert(from(a).element_at(0) == 1);
         assert(from(a).element_at(4) == 5);
-        try { from(a).element_at(-1); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(a).element_at(6); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(c).element_at(0); assert(false); }
-        catch (const linq_exception&) {}
+        try
+        {
+            from(a).element_at(-1);
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(a).element_at(6);
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(c).element_at(0);
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
 
         assert(!from(a).empty());
         assert(from(c).empty());
@@ -235,19 +284,49 @@ int test()
         assert(from(a).last_or_default(0) == 5);
         assert(from(c).first_or_default(0) == 0);
         assert(from(c).last_or_default(0) == 0);
-        try { from(c).first(); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(c).last(); assert(false); }
-        catch (const linq_exception&) {}
+        try
+        {
+            from(c).first();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(c).last();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
 
         assert(from(c).single_or_default(0).sequence_equal(g));
         assert(from(g).single().sequence_equal(g));
-        try { from(a).single(); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(a).single_or_default(0); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(c).single(); assert(false); }
-        catch (const linq_exception&) {}
+        try
+        {
+            from(a).single();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(a).single_or_default(0);
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(c).single();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
     }
     //////////////////////////////////////////////////////////////////
     // containers
@@ -259,7 +338,10 @@ int test()
         assert(from(xs).sequence_equal(from(xs).to_list()));
         assert(from(xs).sequence_equal(from(xs).to_set()));
 
-        auto f = [](int x) { return x; };
+        auto f = [](int x)
+            {
+                return x;
+            };
         assert(from(xs).sequence_equal(from(from(xs).to_map(f)).select([](pair<int, int> p) { return p.first; })));
         assert(from(xs).sequence_equal(from(from(xs).to_map(f)).select([](pair<int, int> p) { return p.second; })));
         assert(from(xs).sequence_equal(from(from(xs).to_multimap(f)).select([](pair<int, int> p) { return p.first; })));
@@ -285,14 +367,38 @@ int test()
         assert(from(xs).average<double>() == 3.0);
 
         vector<int> ys;
-        try { from(ys).product(); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(ys).min(); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(ys).max(); assert(false); }
-        catch (const linq_exception&) {}
-        try { from(ys).average<int>(); assert(false); }
-        catch (const linq_exception&) {}
+        try
+        {
+            from(ys).product();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(ys).min();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(ys).max();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
+        try
+        {
+            from(ys).average<int>();
+            assert(false);
+        }
+        catch (const linq_exception&)
+        {
+        }
     }
     //////////////////////////////////////////////////////////////////
     // set
@@ -316,7 +422,10 @@ int test()
         std::pair<int, int> zs[] = {{1, 6},{2, 7},{3, 8},{4, 9},{5, 10}};
         assert(from(xs).zip_with(ys).sequence_equal(zs));
 
-        auto g = from(xs).group_by([](int x) { return x % 2; });
+        auto g = from(xs).group_by([](int x)
+            {
+                return x % 2;
+            });
         assert(g.select([](std::pair<int, linq<int>> p) { return p.first; }).sequence_equal({0, 1}));
         assert(g.first().second.sequence_equal({2, 4}));
         assert(g.last().second.sequence_equal({1, 3, 5}));
@@ -339,8 +448,8 @@ int test()
         assert(
             flatten(
                 from(xs)
-                .first_order_by([](int x) { return x % 10; })
-                .then_order_by([](int x) { return x / 10; })
+            .first_order_by([](int x) { return x % 10; })
+            .then_order_by([](int x) { return x / 10; })
             )
             .sequence_equal(zs)
         );
@@ -360,9 +469,18 @@ int test()
         pet daisy = {"Daisy", magnus};
         pet pets[] = {barley, boots, whiskers, daisy};
 
-        auto person_name = [](const person& p) { return p.name; };
-        auto pet_name = [](const pet& p) { return p.name; };
-        auto pet_owner_name = [](const pet& p) { return p.owner.name; };
+        auto person_name = [](const person& p)
+            {
+                return p.name;
+            };
+        auto pet_name = [](const pet& p)
+            {
+                return p.name;
+            };
+        auto pet_owner_name = [](const pet& p)
+            {
+                return p.owner.name;
+            };
 
         auto f = from(persons).full_join(from(pets), person_name, pet_owner_name);
         {
