@@ -11,4 +11,5 @@ See main.cpp, it contains all test cases.
 
 ## Further work
 Add more SFINAE support.
+
 Write .natvis file to produce a more friendly view in VS-debugger's watch window.
