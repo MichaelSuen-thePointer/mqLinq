@@ -475,18 +475,9 @@ public:
 
     value_type operator*() const
     {
-        return value_type{*base::_iter, *base::_iter2};
+        return value_type{*base::_iter1, *base::_iter2};
     }
 
-    bool operator==(const self& other) const
-    {
-        return base::_iter == other._iter && base::_iter2 == other._iter2;
-    }
-
-    bool operator!=(const self& other) const
-    {
-        return !((*this) == other);
-    }
 };
 
 template <class TContainer>
