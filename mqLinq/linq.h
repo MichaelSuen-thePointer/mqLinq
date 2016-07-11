@@ -989,8 +989,8 @@ public:
         return from_values(std::move(xs));
     }
 
-    template <class TIterator2/*,
-              std::enable_if_t<std::is_same<value_type, deref_iter_t<TIterator2>>::value>* = nullptr*/>
+    template <class TIterator2,
+              std::enable_if_t<std::is_same<value_type, deref_iter_t<TIterator2>>::value>* = nullptr>
     linq<value_type> intersect_with(const linq_collection<TIterator2>& e) const
     {
         std::set<value_type> s1, s2(e.begin(), e.end());
@@ -1017,8 +1017,8 @@ public:
         return intersect_with(from(ilist));
     }
 
-    template <class TIterator2/*,
-              std::enable_if_t<std::is_same<value_type, deref_iter_t<TIterator2>>::value>* = nullptr*/>
+    template <class TIterator2,
+              std::enable_if_t<std::is_same<value_type, deref_iter_t<TIterator2>>::value>* = nullptr>
     linq<value_type> union_with(const linq_collection<TIterator2>& e) const
     {
         return concat(e).distinct();
@@ -1212,9 +1212,9 @@ public:
             {
                 std::vector<value_type1> outers;
                 std::for_each(lower1, upper1, [&outers](const std::pair<key_type, value_type1>& it)
-                {
-                    outers.push_back(it.second);
-                });
+                              {
+                                  outers.push_back(it.second);
+                              });
                 lower1 = upper1;
                 result.emplace_back(key1, from_values(std::move(outers)), from_empty<value_type2>());
             }
@@ -1222,9 +1222,9 @@ public:
             {
                 std::vector<value_type2> inners;
                 std::for_each(lower2, upper2, [&inners](const std::pair<key_type, value_type2>& it)
-                {
-                    inners.push_back(it.second);
-                });
+                              {
+                                  inners.push_back(it.second);
+                              });
                 lower2 = upper2;
                 result.emplace_back(key2, from_empty<value_type1>(), from_values(std::move(inners)));
             }
@@ -1232,14 +1232,14 @@ public:
             {
                 std::vector<value_type1> outers;
                 std::for_each(lower1, upper1, [&outers](const std::pair<key_type, value_type1>& it)
-                {
-                    outers.push_back(it.second);
-                });
+                              {
+                                  outers.push_back(it.second);
+                              });
                 std::vector<value_type2> inners;
                 std::for_each(lower2, upper2, [&inners](const std::pair<key_type, value_type2>& it)
-                {
-                    inners.push_back(it.second);
-                });
+                              {
+                                  inners.push_back(it.second);
+                              });
                 lower1 = upper1;
                 lower2 = upper2;
                 result.emplace_back(key1, from_values(std::move(outers)), from_values(std::move(inners)));
