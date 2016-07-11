@@ -20,7 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="linq_collection.h">
+    <ClInclude Include="linq.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

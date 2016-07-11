@@ -22,7 +22,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="linq_collection.h" />
+    <ClInclude Include="linq.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D03128A9-DC0E-47F3-AD29-680F10C55848}</ProjectGuid>

@@ -1,20 +1,106 @@
-#include "linq_collection.h"
-#include <vector>
+#ifdef _MSC_VER
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+#include <assert.h>
+#include "linq.h"
 #include <iostream>
-using namespace std;
-using namespace pl::linq;
 
-int test(int x)
+using namespace std;
+//using namespace pl::linq;
+
+struct person
 {
-    return x;
-}
+    string		name;
+};
+
+struct pet
+{
+    string		name;
+    person		owner;
+};
+
 
 int main()
 {
-    auto lamb = [](int x) {return x; };
+    deref_iter_t<const int*> x = 10;
+    {
+        // calculate sum of squares of odd numbers
+        int xs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        int sum = from(xs)
+            .where([](int x) { return x % 2 == 1; })
+            .select([](int x) { return x * x; })
+            .sum();
+        // prints 165
+        cout << sum << endl;
+    }
+    {
+        // iterate of squares of odd numbers ordered by the last digit
+        vector<int> xs = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        for (auto x : from(xs)
+             .where([](int x) { return x % 2 == 1; })
+             .select([](int x) { return x * x; })
+             .order_by([](int x) { return x % 10; })
+             )
+        {
+            cout << x << " ";
+        }
+        // prints 1 81 25 9 49
+        cout << endl;
+    }
+    {
+        person magnus = {"Hedlund, Magnus"};
+        person terry = {"Adams, Terry"};
+        person charlotte = {"Weiss, Charlotte"};
+        person persons[] = {magnus, terry, charlotte};
 
-    callable_traits<decltype(lamb)>::param_type x;
+        pet barley = {"Barley", terry};
+        pet boots = {"Boots", terry};
+        pet whiskers = {"Whiskers", charlotte};
+        pet daisy = {"Daisy", magnus};
+        pet pets[] = {barley, boots, whiskers, daisy};
 
+        auto person_name = [](const person& p) { return p.name; };
+        auto pet_name = [](const pet& p) { return p.name; };
+        auto pet_owner_name = [](const pet& p) { return p.owner.name; };
+
+        // print people and their animals in to levels
+        /* prints
+        Adams, Terry
+        Barley
+        Boots
+        Hedlund, Magnus
+        Daisy
+        Weiss, Charlotte
+        Whiskers
+        */
+        for (auto x : from(persons).group_join(from(pets), person_name, pet_owner_name))
+        {
+            // x :: std::pair<string, std::pair<person, linq<pet>>>
+            cout << std::get<1>(x).name << endl;
+            for (auto y : std::get<2>(x))
+            {
+                cout << "    " << y.name << endl;
+            }
+        }
+        // print people and their animals
+        /* prints
+        Adams, Terry: Barley
+        Adams, Terry: Boots
+        Hedlund, Magnus: Daisy
+        Weiss, Charlotte: Whiskers
+        */
+        for (auto x : from(persons).join(from(pets), person_name, pet_owner_name))
+        {
+            // x :: std::pair<string, std::pair<person, pet>>
+            cout << std::get<1>(x).name << ": " << std::get<2>(x).name << endl;
+        }
+    }
+}
+
+int test()
+{
     //////////////////////////////////////////////////////////////////
     // from
     //////////////////////////////////////////////////////////////////
@@ -58,14 +144,14 @@ int main()
     //////////////////////////////////////////////////////////////////
     {
         int xs[] = {1, 2, 3, 4, 5};
-        assert(from(xs).select([](int x) {return x * 2; }).sequence_equal({2, 4, 6, 8, 10}));
+        assert(from(xs).select([](int x) { return x * 2; }).sequence_equal({2, 4, 6, 8, 10}));
     }
     //////////////////////////////////////////////////////////////////
     // hide type test
     //////////////////////////////////////////////////////////////////
     {
         int xs[] = {1, 2, 3, 4, 5};
-        linq<int> hidden = from(xs).select([](int x) {return x * 2; });
+        linq<int> hidden = from(xs).select([](int x) { return x * 2; });
         assert(hidden.sequence_equal({2, 4, 6, 8, 10}));
     }
     //////////////////////////////////////////////////////////////////
@@ -73,7 +159,7 @@ int main()
     //////////////////////////////////////////////////////////////////
     {
         int xs[] = {1, 2, 3, 4, 5};
-        assert(from(xs).where([](int x) {return x % 2 == 0; }).sequence_equal({2, 4}));
+        assert(from(xs).where([](int x) { return x % 2 == 0; }).sequence_equal({2, 4}));
     }
     //////////////////////////////////////////////////////////////////
     // iterating
@@ -85,8 +171,8 @@ int main()
         int zs[] = {4, 5};
         assert(from(xs).take(3).sequence_equal(ys));
         assert(from(xs).skip(3).sequence_equal(zs));
-        assert(from(xs).take_while([](int a) {return a != 4; }).sequence_equal(ys));
-        assert(from(xs).skip_while([](int a) {return a != 4; }).sequence_equal(zs));
+        assert(from(xs).take_while([](int a) { return a != 4; }).sequence_equal(ys));
+        assert(from(xs).skip_while([](int a) { return a != 4; }).sequence_equal(zs));
         assert(from(xs).take(0).sequence_equal(empty));
         assert(from(xs).skip(5).sequence_equal(empty));
         assert(from(ys).concat(from(zs)).sequence_equal(xs));
@@ -134,11 +220,11 @@ int main()
         assert(from(a).element_at(0) == 1);
         assert(from(a).element_at(4) == 5);
         try { from(a).element_at(-1); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(a).element_at(6); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(c).element_at(0); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
 
         assert(!from(a).empty());
         assert(from(c).empty());
@@ -150,18 +236,18 @@ int main()
         assert(from(c).first_or_default(0) == 0);
         assert(from(c).last_or_default(0) == 0);
         try { from(c).first(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(c).last(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
 
         assert(from(c).single_or_default(0).sequence_equal(g));
         assert(from(g).single().sequence_equal(g));
         try { from(a).single(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(a).single_or_default(0); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(c).single(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
     }
     //////////////////////////////////////////////////////////////////
     // containers
@@ -173,40 +259,40 @@ int main()
         assert(from(xs).sequence_equal(from(xs).to_list()));
         assert(from(xs).sequence_equal(from(xs).to_set()));
 
-        auto f = [](int x) {return x; };
-        assert(from(xs).sequence_equal(from(from(xs).to_map(f)).select([](pair<int, int> p) {return p.first; })));
-        assert(from(xs).sequence_equal(from(from(xs).to_map(f)).select([](pair<int, int> p) {return p.second; })));
-        assert(from(xs).sequence_equal(from(from(xs).to_multimap(f)).select([](pair<int, int> p) {return p.first; })));
-        assert(from(xs).sequence_equal(from(from(xs).to_multimap(f)).select([](pair<int, int> p) {return p.second; })));
+        auto f = [](int x) { return x; };
+        assert(from(xs).sequence_equal(from(from(xs).to_map(f)).select([](pair<int, int> p) { return p.first; })));
+        assert(from(xs).sequence_equal(from(from(xs).to_map(f)).select([](pair<int, int> p) { return p.second; })));
+        assert(from(xs).sequence_equal(from(from(xs).to_multimap(f)).select([](pair<int, int> p) { return p.first; })));
+        assert(from(xs).sequence_equal(from(from(xs).to_multimap(f)).select([](pair<int, int> p) { return p.second; })));
     }
     //////////////////////////////////////////////////////////////////
     // aggregating
     //////////////////////////////////////////////////////////////////
     {
         int xs[] = {1, 2, 3, 4, 5};
-        assert(from(xs).aggregate([](int a, int b) {return a + b; }) == 15);
-        assert(from(xs).aggregate(0, [](int a, int b) {return a + b; }) == 15);
+        assert(from(xs).aggregate([](int a, int b) { return a + b; }) == 15);
+        assert(from(xs).aggregate(0, [](int a, int b) { return a + b; }) == 15);
         assert(from(xs).sum() == 15);
-        assert(from(xs).aggregate([](int a, int b) {return a * b; }) == 120);
-        assert(from(xs).aggregate(1, [](int a, int b) {return a * b; }) == 120);
+        assert(from(xs).aggregate([](int a, int b) { return a * b; }) == 120);
+        assert(from(xs).aggregate(1, [](int a, int b) { return a * b; }) == 120);
         assert(from(xs).product() == 120);
-        assert(from(xs).all([](int a) {return a > 1; }) == false);
-        assert(from(xs).all([](int a) {return a > 0; }) == true);
-        assert(from(xs).any([](int a) {return a > 1; }) == true);
-        assert(from(xs).any([](int a) {return a > 0; }) == true);
+        assert(from(xs).all([](int a) { return a > 1; }) == false);
+        assert(from(xs).all([](int a) { return a > 0; }) == true);
+        assert(from(xs).any([](int a) { return a > 1; }) == true);
+        assert(from(xs).any([](int a) { return a > 0; }) == true);
         assert(from(xs).min() == 1);
         assert(from(xs).max() == 5);
         assert(from(xs).average<double>() == 3.0);
 
         vector<int> ys;
         try { from(ys).product(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(ys).min(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(ys).max(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
         try { from(ys).average<int>(); assert(false); }
-        catch (const std::exception&) {}
+        catch (const linq_exception&) {}
     }
     //////////////////////////////////////////////////////////////////
     // set
@@ -220,5 +306,105 @@ int main()
         assert(from(xs).intersect_with(ys).sequence_equal({2, 3}));
         assert(from(xs).union_with(ys).sequence_equal({1, 2, 3, 4}));
     }
+    //////////////////////////////////////////////////////////////////
+    // restructuring
+    //////////////////////////////////////////////////////////////////
+    {
+        int xs[] = {1, 2, 3, 4, 5};
+        int ys[] = {6, 7, 8, 9, 10};
 
+        std::pair<int, int> zs[] = {{1, 6},{2, 7},{3, 8},{4, 9},{5, 10}};
+        assert(from(xs).zip_with(ys).sequence_equal(zs));
+
+        auto g = from(xs).group_by([](int x) { return x % 2; });
+        assert(g.select([](std::pair<int, linq<int>> p) { return p.first; }).sequence_equal({0, 1}));
+        assert(g.first().second.sequence_equal({2, 4}));
+        assert(g.last().second.sequence_equal({1, 3, 5}));
+
+        assert(
+            from_values({1, 2, 3})
+            .select_many([](int x) { return from_values({x, x*x, x*x*x}); })
+            .sequence_equal({1, 1, 1, 2, 4, 8, 3, 9, 27})
+        );
+    }
+    //////////////////////////////////////////////////////////////////
+    // ordering
+    //////////////////////////////////////////////////////////////////
+    {
+        int xs[] = {7, 1, 12, 2, 8, 3, 11, 4, 9, 5, 13, 6, 10};
+        int ys[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+        int zs[] = {10, 1, 11, 2, 12, 3, 13, 4, 5, 6, 7, 8, 9};
+
+        assert(from(xs).order_by([](int x) { return x; }).sequence_equal(ys));
+        assert(
+            flatten(
+                from(xs)
+                .first_order_by([](int x) { return x % 10; })
+                .then_order_by([](int x) { return x / 10; })
+            )
+            .sequence_equal(zs)
+        );
+    }
+    //////////////////////////////////////////////////////////////////
+    // joining
+    //////////////////////////////////////////////////////////////////
+    {
+        person magnus = {"Hedlund, Magnus"};
+        person terry = {"Adams, Terry"};
+        person charlotte = {"Weiss, Charlotte"};
+        person persons[] = {magnus, terry, charlotte};
+
+        pet barley = {"Barley", terry};
+        pet boots = {"Boots", terry};
+        pet whiskers = {"Whiskers", charlotte};
+        pet daisy = {"Daisy", magnus};
+        pet pets[] = {barley, boots, whiskers, daisy};
+
+        auto person_name = [](const person& p) { return p.name; };
+        auto pet_name = [](const pet& p) { return p.name; };
+        auto pet_owner_name = [](const pet& p) { return p.owner.name; };
+
+        auto f = from(persons).full_join(from(pets), person_name, pet_owner_name);
+        {
+            typedef std::tuple<string, linq<person>, linq<pet>> TItem;
+            auto xs = f.to_vector();
+            assert(from(xs).select([](const TItem& item) { return std::get<0>(item); }).sequence_equal({terry.name, magnus.name, charlotte.name}));
+            assert(std::get<1>(xs[0]).select(person_name).sequence_equal({terry.name}));
+            assert(std::get<1>(xs[1]).select(person_name).sequence_equal({magnus.name}));
+            assert(std::get<1>(xs[2]).select(person_name).sequence_equal({charlotte.name}));
+            assert(std::get<2>(xs[0]).select(pet_name).sequence_equal({barley.name, boots.name}));
+            assert(std::get<2>(xs[1]).select(pet_name).sequence_equal({daisy.name}));
+            assert(std::get<2>(xs[2]).select(pet_name).sequence_equal({whiskers.name}));
+        }
+        auto g = from(persons).group_join(from(pets), person_name, pet_owner_name);
+        {
+            typedef std::tuple<string, person, linq<pet>> TItem;
+            auto xs = g.to_vector();
+            assert(from(xs).select([](const TItem& item) { return std::get<0>(item); }).sequence_equal({terry.name, magnus.name, charlotte.name}));
+            assert(std::get<1>(xs[0]).name == terry.name);
+            assert(std::get<1>(xs[1]).name == magnus.name);
+            assert(std::get<1>(xs[2]).name == charlotte.name);
+            assert(std::get<2>(xs[0]).select(pet_name).sequence_equal({barley.name, boots.name}));
+            assert(std::get<2>(xs[1]).select(pet_name).sequence_equal({daisy.name}));
+            assert(std::get<2>(xs[2]).select(pet_name).sequence_equal({whiskers.name}));
+        }
+        auto j = from(persons).join(from(pets), person_name, pet_owner_name);
+        {
+            typedef std::tuple<string, person, pet> TItem;
+            auto xs = j.to_vector();
+            assert(from(xs).select([](const TItem& item) { return std::get<0>(item); }).sequence_equal({terry.name, terry.name, magnus.name, charlotte.name}));
+            assert(std::get<1>(xs[0]).name == terry.name);
+            assert(std::get<1>(xs[1]).name == terry.name);
+            assert(std::get<1>(xs[2]).name == magnus.name);
+            assert(std::get<1>(xs[3]).name == charlotte.name);
+            assert(std::get<2>(xs[0]).name == barley.name);
+            assert(std::get<2>(xs[1]).name == boots.name);
+            assert(std::get<2>(xs[2]).name == daisy.name);
+            assert(std::get<2>(xs[3]).name == whiskers.name);
+        }
+    }
+#ifdef _MSC_VER
+    _CrtDumpMemoryLeaks();
+#endif
+    return 0;
 }
