@@ -768,7 +768,7 @@ public:
     }
 
     template <class TIterator2>
-    linq_collection<concat_iterator<TIterator, TIterator2>> concat(const linq_collection<TIterator2>& other) const
+    linq_collection<concat_iterator<TIterator, TIterator2>> concat_impl(const linq_collection<TIterator2>& other) const
     {
         return {
             concat_iterator<TIterator, TIterator2>{_begin, _end, other.begin(), other.end()},
@@ -776,16 +776,25 @@ public:
         };
     }
 
-    template <class TContainer>
-    auto concat(const TContainer& other) const -> decltype(concat(from(other)))
+    template <class TIterator2>
+    auto concat(const linq_collection<TIterator2>& cont)
+    -> decltype(concat_impl(cont))
     {
-        return concat(from(other));
+        return concat_impl(cont);
+    }
+
+    template <class TContainer>
+    auto concat(const TContainer& other) const
+    -> decltype(concat_impl(from(other)))
+    {
+        return concat_impl(from(other));
     }
 
     template <class T>
-    auto concat(const std::initializer_list<T>& ilist) const -> decltype(concat(from(ilist)))
+    auto concat(const std::initializer_list<T>& ilist) const
+    -> decltype(concat_impl(from(ilist)))
     {
-        return concat(from(ilist));
+        return concat_impl(from(ilist));
     }
 
     template <class T>
@@ -916,7 +925,7 @@ public:
     }
 
     template <class TIterator2>
-    bool sequence_equal(const linq_collection<TIterator2>& e) const
+    bool sequence_equal_impl(const linq_collection<TIterator2>& e) const
     {
         auto it1 = _begin;
         auto it1e = _end;
@@ -935,16 +944,25 @@ public:
         return it1 == it1e && it2 == it2e;
     }
 
-    template <class TContainer>
-    auto sequence_equal(const TContainer& other) const -> decltype(sequence_equal(from(other)))
+    template <class TIterator2>
+    auto sequence_equal(const linq_collection<TIterator2>& cont) const
+    -> decltype(sequence_equal_impl(cont))
     {
-        return sequence_equal(from(other));
+        return sequence_equal_impl(cont);
+    }
+
+    template <class TContainer>
+    auto sequence_equal(const TContainer& other) const
+    -> decltype(sequence_equal_impl(from(other)))
+    {
+        return sequence_equal_impl(from(other));
     }
 
     template <class T>
-    auto sequence_equal(const std::initializer_list<T>& ilist) const -> decltype(sequence_equal(from(ilist)))
+    auto sequence_equal(const std::initializer_list<T>& ilist) const
+    -> decltype(sequence_equal_impl(from(ilist)))
     {
-        return sequence_equal(from(ilist));
+        return sequence_equal_impl(from(ilist));
     }
 
     linq<value_type> distinct() const
@@ -962,20 +980,8 @@ public:
         return from_values(std::move(v));
     }
 
-    template <class TContainer>
-    auto except_with(const TContainer& other) const -> decltype(except_with(from(other)))
-    {
-        return except_with(from(other));
-    }
-
-    template <class T>
-    auto except_with(const std::initializer_list<T>& ilist) const -> decltype(except_with(from(ilist)))
-    {
-        return except_with(from(ilist));
-    }
-
     template <class TIterator2>
-    linq<value_type> except_with(const linq_collection<TIterator2>& e) const
+    linq<value_type> except_with_impl(const linq_collection<TIterator2>& e) const
     {
         std::set<value_type> s(_begin, _end);
         std::vector<value_type> xs;
@@ -989,9 +995,31 @@ public:
         return from_values(std::move(xs));
     }
 
+    template <class TContainer>
+    auto except_with(const TContainer& other) const
+    -> decltype(except_with_impl(from(other)))
+    {
+        return except_with_impl(from(other));
+    }
+
+    template <class T>
+    auto except_with(const std::initializer_list<T>& ilist) const
+    -> decltype(except_with_impl(from(ilist)))
+    {
+        return except_with_impl(from(ilist));
+    }
+
+    template <class TIterator2>
+    auto except_with(const linq_collection<TIterator2>& e) const
+    -> decltype(except_with_impl(e))
+    {
+        return except_with_impl(e);
+    }
+
+
     template <class TIterator2,
               std::enable_if_t<std::is_same<value_type, deref_iter_t<TIterator2>>::value>* = nullptr>
-    linq<value_type> intersect_with(const linq_collection<TIterator2>& e) const
+    linq<value_type> intersect_with_impl(const linq_collection<TIterator2>& e) const
     {
         std::set<value_type> s1, s2(e.begin(), e.end());
         std::vector<value_type> res;
@@ -1005,35 +1033,53 @@ public:
         return from_values(std::move(res));
     }
 
-    template <class TContainer>
-    auto intersect_with(const TContainer& other) const -> decltype(intersect_with(from(other)))
+    template <class TIterator2>
+    auto intersect_with(const linq_collection<TIterator2>& e) const
+    -> decltype(intersect_with_impl(e))
     {
-        return intersect_with(from(other));
+        return intersect_with_impl(e);
+    }
+
+    template <class TContainer>
+    auto intersect_with(const TContainer& other) const
+    -> decltype(intersect_with_impl(from(other)))
+    {
+        return intersect_with_impl(from(other));
     }
 
     template <class T>
-    auto intersect_with(const std::initializer_list<T>& ilist) const -> decltype(intersect_with(from(ilist)))
+    auto intersect_with(const std::initializer_list<T>& ilist) const
+    -> decltype(intersect_with_impl(from(ilist)))
     {
-        return intersect_with(from(ilist));
+        return intersect_with_impl(from(ilist));
     }
 
     template <class TIterator2,
               std::enable_if_t<std::is_same<value_type, deref_iter_t<TIterator2>>::value>* = nullptr>
-    linq<value_type> union_with(const linq_collection<TIterator2>& e) const
+    linq<value_type> union_with_impl(const linq_collection<TIterator2>& e) const
     {
         return concat(e).distinct();
     }
 
-    template <class TContainer>
-    auto union_with(const TContainer& other) const -> decltype(union_with(from(other)))
+    template <class TIterator2>
+    auto union_with(const linq_collection<TIterator2>& e) const
+    -> decltype(union_with_impl(e))
     {
-        return union_with(from(other));
+        return union_with_impl(e);
+    }
+
+    template <class TContainer>
+    auto union_with(const TContainer& other) const
+    -> decltype(union_with_impl(from(other)))
+    {
+        return union_with_impl(from(other));
     }
 
     template <class T>
-    auto union_with(const std::initializer_list<T>& ilist) const -> decltype(union_with(from(ilist)))
+    auto union_with(const std::initializer_list<T>& ilist) const
+    -> decltype(union_with_impl(from(ilist)))
     {
-        return union_with(from(ilist));
+        return union_with_impl(from(ilist));
     }
 
     template <class TFunction>
@@ -1174,7 +1220,7 @@ public:
     }
 
     template <class TIterator2, class TFunction1, class TFunction2>
-    auto full_join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
+    auto full_join_impl(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
     -> linq<std::tuple<std::remove_reference_t<typename callable_traits<TFunction1>::return_type>,
                        linq<std::decay_t<deref_iter_t<TIterator>>>,
                        linq<std::decay_t<deref_iter_t<TIterator2>>>>>
@@ -1248,22 +1294,29 @@ public:
         return from_values(std::move(result));
     }
 
+    template <class TIterator2, class TFunction1, class TFunction2>
+    auto full_join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
+    -> decltype(full_join_impl(e, keySelector1, keySelector2))
+    {
+        return full_join_impl(e, keySelector1, keySelector2);
+    }
+
     template <class TContainer, class TFunction1, class TFunction2>
     auto full_join(const TContainer& e, const TFunction1 keySelector1, const TFunction2 keySelector2) const
-    -> decltype(full_join(from(e), keySelector1, keySelector2))
+    -> decltype(full_join_impl(from(e), keySelector1, keySelector2))
     {
-        return full_join(from(e), keySelector1, keySelector2);
+        return full_join_impl(from(e), keySelector1, keySelector2);
     }
 
     template <class T, class TFunction1, class TFunction2>
     auto full_join(const std::initializer_list<T>& e, const TFunction1 keySelector1, const TFunction2 keySelector2) const
-    -> decltype(full_join(from(e), keySelector1, keySelector2))
+    -> decltype(full_join_impl(from(e), keySelector1, keySelector2))
     {
-        return full_join(from(e), keySelector1, keySelector2);
+        return full_join_impl(from(e), keySelector1, keySelector2);
     }
 
     template <class TIterator2, class TFunction1, class TFunction2>
-    auto group_join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
+    auto group_join_impl(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
     -> linq<std::tuple<std::remove_reference_t<decltype(keySelector1(std::declval<value_type>()))>,
                        std::decay_t<deref_iter_t<TIterator>>,
                        linq<std::decay_t<deref_iter_t<TIterator2>>>>>
@@ -1287,22 +1340,29 @@ public:
         return g;
     }
 
+    template <class TIterator2, class TFunction1, class TFunction2>
+    auto group_join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
+    -> decltype(group_join_impl(e, keySelector1, keySelector2))
+    {
+        return group_join_impl(e, keySelector1, keySelector2);
+    }
+
     template <class TContainer, class TFunction1, class TFunction2>
     auto group_join(const TContainer& e, const TFunction1 keySelector1, const TFunction2 keySelector2) const
-    -> decltype(group_join(from(e), keySelector1, keySelector2))
+    -> decltype(group_join_impl(from(e), keySelector1, keySelector2))
     {
-        return group_join(from(e), keySelector1, keySelector2);
+        return group_join_impl(from(e), keySelector1, keySelector2);
     }
 
     template <class T, class TFunction1, class TFunction2>
     auto group_join(const std::initializer_list<T>& e, const TFunction1 keySelector1, const TFunction2 keySelector2) const
-    -> decltype(group_join(from(e), keySelector1, keySelector2))
+    -> decltype(group_join_impl(from(e), keySelector1, keySelector2))
     {
-        return group_join(from(e), keySelector1, keySelector2);
+        return group_join_impl(from(e), keySelector1, keySelector2);
     }
 
     template <class TIterator2, class TFunction1, class TFunction2>
-    auto join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
+    auto join_impl(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
     -> linq<std::tuple<std::remove_reference_t<decltype(keySelector1(std::declval<value_type>()))>,
                        std::decay_t<deref_iter_t<TIterator>>,
                        std::decay_t<deref_iter_t<TIterator2>>>>
@@ -1325,18 +1385,25 @@ public:
         return j;
     }
 
+    template <class TIterator2, class TFunction1, class TFunction2>
+    auto join(const linq_collection<TIterator2>& e, const TFunction1& keySelector1, const TFunction2& keySelector2) const
+    -> decltype(join_impl(e, keySelector1, keySelector2))
+    {
+        return join_impl(e, keySelector1, keySelector2);
+    }
+
     template <class TContainer, class TFunction1, class TFunction2>
     auto join(const TContainer& e, const TFunction1 keySelector1, const TFunction2 keySelector2) const
-    -> decltype(join(from(e), keySelector1, keySelector2))
+    -> decltype(join_impl(from(e), keySelector1, keySelector2))
     {
-        return join(from(e), keySelector1, keySelector2);
+        return join_impl(from(e), keySelector1, keySelector2);
     }
 
     template <class T, class TFunction1, class TFunction2>
     auto join(const std::initializer_list<T>& e, const TFunction1 keySelector1, const TFunction2 keySelector2) const
-    -> decltype(join(from(e), keySelector1, keySelector2))
+    -> decltype(join_impl(from(e), keySelector1, keySelector2))
     {
-        return join(from(e), keySelector1, keySelector2);
+        return join_impl(from(e), keySelector1, keySelector2);
     }
 
     template <class TFunction>
@@ -1371,7 +1438,7 @@ public:
     }
 
     template <class TIterator2>
-    auto zip_with(const linq_collection<TIterator2>& e) const
+    auto zip_with_impl(const linq_collection<TIterator2>& e) const
     -> linq_collection<zip_iterator<TIterator, TIterator2>>
     {
         return {
@@ -1380,18 +1447,25 @@ public:
         };
     }
 
+    template <class TIterator2>
+    auto zip_with(const linq_collection<TIterator2>& e) const
+    -> decltype(zip_with_impl(e))
+    {
+        return zip_with_impl(e);
+    }
+
     template <class TContainer>
     auto zip_with(const TContainer& other) const
-    -> decltype(zip_with(from(other)))
+    -> decltype(zip_with_impl(from(other)))
     {
-        return zip_with(from(other));
+        return zip_with_impl(from(other));
     }
 
     template <class T>
     auto zip_with(const std::initializer_list<T>& ilist) const
-    -> decltype(zip_with(from(ilist)))
+    -> decltype(zip_with_impl(from(ilist)))
     {
-        return zip_with(from(ilist));
+        return zip_with_impl(from(ilist));
     }
 
     template <class TContainer>
