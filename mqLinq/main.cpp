@@ -84,10 +84,6 @@ int main()
             {
                 return p.name;
             };
-        auto pet_name = [](const pet& p)
-            {
-                return p.name;
-            };
         auto pet_owner_name = [](const pet& p)
             {
                 return p.owner.name;

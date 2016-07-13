@@ -983,7 +983,7 @@ public:
     template <class TIterator2>
     linq<value_type> except_with_impl(const linq_collection<TIterator2>& e) const
     {
-        std::set<value_type> s(_begin, _end);
+        std::set<value_type> s(e.begin(), e.end());
         std::vector<value_type> xs;
         std::for_each(_begin, _end, [&](const value_type& value)
                       {
