@@ -38,7 +38,7 @@ class collection_empty : public linq_exception
 {
 public:
     explicit collection_empty(const std::string& msg)
-        : linq_exception(msg)
+        : linq_exception(msg.c_str())
     {
     }
 
@@ -52,7 +52,7 @@ class element_not_unique : public linq_exception
 {
 public:
     explicit element_not_unique(const std::string& _Message)
-        : linq_exception(_Message)
+        : linq_exception(_Message.c_str())
     {
     }
 
@@ -116,49 +116,10 @@ struct callable_traits<TRet(TClass::*)(TArgs ...) const> : memfunc_traits<TRet(T
 };
 
 template <typename TIterator>
-using deref_iter_t = typename std::iterator_traits<TIterator>::value_type;
-
-template<class T>
-struct iterator_tag_priority;
-
-template<>
-struct iterator_tag_priority<std::input_iterator_tag>
-    : std::integral_constant<int, 0>
-{};
-
-template<>
-struct iterator_tag_priority<std::output_iterator_tag>
-    : std::integral_constant<int, 0>
-{};
-
-template<>
-struct iterator_tag_priority<std::forward_iterator_tag>
-    : std::integral_constant<int, 1>
-{};
-
-template<>
-struct iterator_tag_priority<std::bidirectional_iterator_tag>
-    : std::integral_constant<int, 2>
-{};
-
-template<>
-struct iterator_tag_priority<std::random_access_iterator_tag>
-    : std::integral_constant<int, 3>
-{};
-
-template <class TValue, class TInnerIterator = void>
-class linq_iterator_traits
-{
-public:
-    using value_type = TValue;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = typename std::iterator_traits<TInnerIterator>::iterator_category;
-};
+using deref_iter_t = std::decay_t<decltype(*(std::declval<TIterator>()))>;
 
 template <class TValue>
-class linq_iterator_traits<TValue, void>
+class linq_iterator_traits
 {
 public:
     using value_type = TValue;
