@@ -118,28 +118,33 @@ struct callable_traits<TRet(TClass::*)(TArgs ...) const> : memfunc_traits<TRet(T
 template <typename TIterator>
 using deref_iter_t = std::decay_t<decltype(*(std::declval<TIterator>()))>;
 
-template <class... iters>
-class iterator_common_impl;
-
-template <class TIterator, class TValue>
-class iterator_common_impl<TIterator, TValue>
+template <class TValue>
+class linq_iterator_traits
 {
-protected:
-    using self = iterator_common_impl<TIterator, TValue>;
-
-    TIterator _iter;
 public:
     using value_type = TValue;
     using pointer = value_type*;
     using reference = value_type&;
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
+};
+
+template <class... iters>
+class iterator_common_impl;
+
+template <class TIterator, class TValue>
+class iterator_common_impl<TIterator, TValue> : public linq_iterator_traits<TValue>
+{
+protected:
+    using self = iterator_common_impl<TIterator, TValue>;
+
+    TIterator _iter;
 
     explicit iterator_common_impl(const TIterator& iter)
         : _iter(iter)
     {
     }
-
+public:
     self& operator++()
     {
         ++_iter;
@@ -165,7 +170,7 @@ public:
 template <class TIterator>
 class iterator_common_impl<TIterator> : public iterator_common_impl<TIterator, deref_iter_t<TIterator>>
 {
-public:
+protected:
     explicit iterator_common_impl(const TIterator& iter)
         : iterator_common_impl<TIterator, deref_iter_t<TIterator>>(iter)
     {
@@ -352,17 +357,12 @@ public:
 };
 
 template <class TIterator1, class TIterator2, class TValue>
-class iterator_common_impl<TIterator1, TIterator2, TValue>
+class iterator_common_impl<TIterator1, TIterator2, TValue> : public linq_iterator_traits<TValue>
 {
 private:
     using self = iterator_common_impl<TIterator1, TIterator2, TValue>;
-public:
-    using value_type = TValue;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = std::forward_iterator_tag;
 
+protected:
     TIterator1 _iter1;
     TIterator2 _iter2;
 
@@ -372,6 +372,7 @@ public:
     {
     }
 
+public:
     self& operator++()
     {
         return *this;
@@ -495,16 +496,11 @@ public:
 };
 
 template <class T>
-class empty_iterator
+class empty_iterator : public linq_iterator_traits<T>
 {
 private:
     using self = empty_iterator<T>;
 public:
-    using value_type = T;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = std::forward_iterator_tag;
 
     self& operator++()
     {
@@ -512,7 +508,6 @@ public:
     }
 
     [[noreturn]]
-
     value_type operator*() const
     {
         throw collection_empty("collection is empty");
@@ -531,7 +526,7 @@ public:
 
 
 template <class TValue>
-class any_iterator
+class any_iterator : public linq_iterator_traits<TValue>
 {
 private:
     class any_base
@@ -587,11 +582,6 @@ private:
 
     std::shared_ptr<any_base> _iter;
 public:
-    using value_type = TValue;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = std::forward_iterator_tag;
 
     template <class TIterator>
     any_iterator(const TIterator& iter)
@@ -661,7 +651,7 @@ template <class TContainer/*, std::enable_if_t<!std::is_same<
               std::decay_t<TContainer>,
               std::initializer_list<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>>::value>* = nullptr*/>
 auto from_values(TContainer&& cont)
--> linq<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>
+    -> linq<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>
 {
     auto xs = std::make_shared<TContainer>(std::move(cont));
     using iter_type = boxed_container_iterator<TContainer>;

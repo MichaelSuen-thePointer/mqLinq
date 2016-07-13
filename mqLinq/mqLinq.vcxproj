@@ -28,7 +28,7 @@
     <ProjectGuid>{D03128A9-DC0E-47F3-AD29-680F10C55848}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>mqLinq</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
