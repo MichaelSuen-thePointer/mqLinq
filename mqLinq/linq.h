@@ -137,6 +137,7 @@ class iterator_common_impl<TIterator, TValue> : public linq_iterator_traits<TVal
 {
 protected:
     using self = iterator_common_impl<TIterator, TValue>;
+    using traits = linq_iterator_traits<TValue>;
 
     TIterator _iter;
 
@@ -144,7 +145,14 @@ protected:
         : _iter(iter)
     {
     }
+
 public:
+    using value_type = typename traits::value_type;
+    using pointer = typename traits::pointer;
+    using reference = typename traits::reference;
+    using difference_type = typename traits::difference_type;
+    using iterator_category = typename traits::iterator_category;
+
     self& operator++()
     {
         ++_iter;
@@ -171,10 +179,19 @@ template <class TIterator>
 class iterator_common_impl<TIterator> : public iterator_common_impl<TIterator, deref_iter_t<TIterator>>
 {
 protected:
+    using base = iterator_common_impl<TIterator, deref_iter_t<TIterator>>;
+    using traits = typename base::traits;
+    using value_type = typename traits::value_type;
+    using pointer = typename traits::pointer;
+    using reference = typename traits::reference;
+    using difference_type = typename traits::difference_type;
+    using iterator_category = typename traits::iterator_category;
+
     explicit iterator_common_impl(const TIterator& iter)
         : iterator_common_impl<TIterator, deref_iter_t<TIterator>>(iter)
     {
     }
+
 };
 
 template <class TIterator, class TFunction>
@@ -184,10 +201,17 @@ private:
     using base = iterator_common_impl<TIterator, decltype(std::declval<TFunction>()(std::declval<deref_iter_t<TIterator>>()))>;
     using self = select_iterator<TIterator, TFunction>;
     using return_type = decltype(std::declval<TFunction>()(std::declval<deref_iter_t<TIterator>>()));
-public:
-    using value_type = typename base::value_type;
+    
+
     TFunction _func;
 public:
+
+    using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
+
     select_iterator(const TIterator& iter, const TFunction& pred)
         : base(iter)
         , _func(pred)
@@ -207,7 +231,12 @@ private:
     using base = iterator_common_impl<TIterator>;
 public:
     using self = where_iterator<TIterator, TFunction>;
+
     using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
 private:
     TIterator _end;
     TFunction _func;
@@ -247,6 +276,10 @@ private:
     using self = skip_iterator<TIterator>;
 public:
     using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
 private:
     TIterator _end;
 public:
@@ -268,11 +301,17 @@ class skip_while_iterator : public iterator_common_impl<TIterator>
 private:
     using base = iterator_common_impl<TIterator>;
     using self = skip_while_iterator<TIterator, TFunction>;
-    using value_type = typename base::value_type;
 
     TIterator _end;
     TFunction _func;
 public:
+
+    using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
+
     skip_while_iterator(const TIterator& iter, const TIterator& end, const TFunction& func)
         : base(iter)
         , _end(end)
@@ -292,6 +331,11 @@ class take_iterator : public iterator_common_impl<TIterator>
     using self = take_iterator<TIterator>;
 public:
     using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
+
 private:
     TIterator _end;
     std::size_t _current;
@@ -331,6 +375,11 @@ class take_while_iterator : public iterator_common_impl<TIterator>
     using self = take_while_iterator<TIterator, TFunction>;
 public:
     using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
+
 private:
     TIterator _end;
     TFunction _func;
@@ -363,6 +412,13 @@ private:
     using self = iterator_common_impl<TIterator1, TIterator2, TValue>;
 
 protected:
+    using traits = linq_iterator_traits<TValue>;
+    using value_type = typename traits::value_type;
+    using pointer = typename traits::pointer;
+    using reference = typename traits::reference;
+    using difference_type = typename traits::difference_type;
+    using iterator_category = typename traits::iterator_category;
+
     TIterator1 _iter1;
     TIterator2 _iter2;
 
@@ -402,6 +458,10 @@ private:
     using base = iterator_common_impl<TIterator1, TIterator2, deref_iter_t<TIterator1>>;
 public:
     using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
 private:
     TIterator1 _end1;
     TIterator2 _end2;
@@ -453,7 +513,10 @@ private:
     TIterator2 _end2;
 public:
     using value_type = typename base::value_type;
-
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
     zip_iterator(const TIterator1& begin1, const TIterator1& end1, const TIterator2& begin2, const TIterator2& end2)
         : base(begin1, begin2)
         , _end1(end1)
@@ -485,7 +548,13 @@ private:
     using base = iterator_common_impl<decltype(std::begin(std::declval<TContainer>()))>;
 public:
     using iterator_type = decltype(std::begin(std::declval<TContainer>()));
-    using value_type = deref_iter_t<iterator_type>;
+
+    using value_type = typename base::value_type;
+    using pointer = typename base::pointer;
+    using reference = typename base::reference;
+    using difference_type = typename base::difference_type;
+    using iterator_category = typename base::iterator_category;
+
     std::shared_ptr<TContainer> _container;
 
     boxed_container_iterator(const std::shared_ptr<TContainer>& container, const iterator_type& iterator)
@@ -502,12 +571,20 @@ private:
     using self = empty_iterator<T>;
 public:
 
+    using traits = linq_iterator_traits<T>;
+    using value_type = typename traits::value_type;
+    using pointer = typename traits::pointer;
+    using reference = typename traits::reference;
+    using difference_type = typename traits::difference_type;
+    using iterator_category = typename traits::iterator_category;
+
     self& operator++()
     {
         return *this;
     }
 
     [[noreturn]]
+
     value_type operator*() const
     {
         throw collection_empty("collection is empty");
@@ -583,6 +660,13 @@ private:
     std::shared_ptr<any_base> _iter;
 public:
 
+    using traits = linq_iterator_traits<TValue>;
+    using value_type = typename traits::value_type;
+    using pointer = typename traits::pointer;
+    using reference = typename traits::reference;
+    using difference_type = typename traits::difference_type;
+    using iterator_category = typename traits::iterator_category;
+
     template <class TIterator>
     any_iterator(const TIterator& iter)
         : _iter(std::make_shared<any_content<TIterator>>(iter))
@@ -651,7 +735,7 @@ template <class TContainer/*, std::enable_if_t<!std::is_same<
               std::decay_t<TContainer>,
               std::initializer_list<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>>::value>* = nullptr*/>
 auto from_values(TContainer&& cont)
-    -> linq<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>
+-> linq<deref_iter_t<decltype(std::begin(std::declval<TContainer>()))>>
 {
     auto xs = std::make_shared<TContainer>(std::move(cont));
     using iter_type = boxed_container_iterator<TContainer>;
