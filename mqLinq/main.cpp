@@ -26,9 +26,19 @@ struct pet
     person owner;
 };
 
+#define ASSERT_TYPE_EQ(type1, type2, msg) static_assert(std::is_same<type1, type2>::value, msg)
+
+void iterator_category_test()
+{
+    [[maybeunused]]
+    int xs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    auto query = from(xs).select([](const auto& x) { return x; });
+    auto iter = query.begin();
+}
 
 int main()
 {
+    vector
     {
         // calculate sum of squares of odd numbers
         int xs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
